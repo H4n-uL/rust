@@ -530,7 +530,7 @@ mod mut_ptr;
 pub const unsafe fn copy_nonoverlapping<T>(src: *const T, dst: *mut T, count: usize) {
     ub_checks::assert_unsafe_precondition!(
         check_language_ub,
-        "ptr::copy_nonoverlapping requires that both pointer arguments are aligned and non-null \
+        "ptr::copy_nonoverlapping requires that both pointer arguments are aligned \
         and the specified memory ranges do not overlap",
         (
             src: *const () = src as *const (),
@@ -539,9 +539,8 @@ pub const unsafe fn copy_nonoverlapping<T>(src: *const T, dst: *mut T, count: us
             align: usize = align_of::<T>(),
             count: usize = count,
         ) => {
-            let zero_size = count == 0 || size == 0;
-            ub_checks::maybe_is_aligned_and_not_null(src, align, zero_size)
-                && ub_checks::maybe_is_aligned_and_not_null(dst, align, zero_size)
+            ub_checks::maybe_is_aligned(src, align)
+                && ub_checks::maybe_is_aligned(dst, align)
                 && ub_checks::maybe_is_nonoverlapping(src, dst, size, count)
         }
     );
@@ -629,15 +628,14 @@ pub const unsafe fn copy<T>(src: *const T, dst: *mut T, count: usize) {
     unsafe {
         ub_checks::assert_unsafe_precondition!(
             check_language_ub,
-            "ptr::copy requires that both pointer arguments are aligned and non-null",
+            "ptr::copy requires that both pointer arguments are aligned",
             (
                 src: *const () = src as *const (),
                 dst: *mut () = dst as *mut (),
                 align: usize = align_of::<T>(),
-                zero_size: bool = T::IS_ZST || count == 0,
             ) =>
-            ub_checks::maybe_is_aligned_and_not_null(src, align, zero_size)
-                && ub_checks::maybe_is_aligned_and_not_null(dst, align, zero_size)
+            ub_checks::maybe_is_aligned(src, align)
+                && ub_checks::maybe_is_aligned(dst, align)
         );
         crate::intrinsics::copy(src, dst, count)
     }
@@ -703,12 +701,11 @@ pub const unsafe fn write_bytes<T>(dst: *mut T, val: u8, count: usize) {
     unsafe {
         ub_checks::assert_unsafe_precondition!(
             check_language_ub,
-            "ptr::write_bytes requires that the destination pointer is aligned and non-null",
+            "ptr::write_bytes requires that the destination pointer is aligned",
             (
                 addr: *const () = dst as *const (),
                 align: usize = align_of::<T>(),
-                zero_size: bool = T::IS_ZST || count == 0,
-            ) => ub_checks::maybe_is_aligned_and_not_null(addr, align, zero_size)
+            ) => ub_checks::maybe_is_aligned(addr, align)
         );
         crate::intrinsics::write_bytes(dst, val, count)
     }
@@ -1367,7 +1364,7 @@ pub const unsafe fn swap<T>(x: *mut T, y: *mut T) {
 pub const unsafe fn swap_nonoverlapping<T>(x: *mut T, y: *mut T, count: usize) {
     ub_checks::assert_unsafe_precondition!(
         check_library_ub,
-        "ptr::swap_nonoverlapping requires that both pointer arguments are aligned and non-null \
+        "ptr::swap_nonoverlapping requires that both pointer arguments are aligned and \
         and the specified memory ranges do not overlap",
         (
             x: *mut () = x as *mut (),
@@ -1376,9 +1373,8 @@ pub const unsafe fn swap_nonoverlapping<T>(x: *mut T, y: *mut T, count: usize) {
             align: usize = align_of::<T>(),
             count: usize = count,
         ) => {
-            let zero_size = size == 0 || count == 0;
-            ub_checks::maybe_is_aligned_and_not_null(x, align, zero_size)
-                && ub_checks::maybe_is_aligned_and_not_null(y, align, zero_size)
+            ub_checks::maybe_is_aligned(x, align)
+                && ub_checks::maybe_is_aligned(y, align)
                 && ub_checks::maybe_is_nonoverlapping(x, y, size, count)
         }
     );
@@ -1551,12 +1547,11 @@ pub const unsafe fn replace<T>(dst: *mut T, src: T) -> T {
     unsafe {
         ub_checks::assert_unsafe_precondition!(
             check_language_ub,
-            "ptr::replace requires that the pointer argument is aligned and non-null",
+            "ptr::replace requires that the pointer argument is aligned",
             (
                 addr: *const () = dst as *const (),
                 align: usize = align_of::<T>(),
-                is_zst: bool = T::IS_ZST,
-            ) => ub_checks::maybe_is_aligned_and_not_null(addr, align, is_zst)
+            ) => ub_checks::maybe_is_aligned(addr, align)
         );
         if T::IS_ZST {
             // If `T` is a ZST, `dst` is allowed to be null. However, we also don't have to actually
@@ -1710,12 +1705,11 @@ pub const unsafe fn read<T>(src: *const T) -> T {
         #[cfg(debug_assertions)] // Too expensive to always enable (for now?)
         ub_checks::assert_unsafe_precondition!(
             check_language_ub,
-            "ptr::read requires that the pointer argument is aligned and non-null",
+            "ptr::read requires that the pointer argument is aligned",
             (
                 addr: *const () = src as *const (),
                 align: usize = align_of::<T>(),
-                is_zst: bool = T::IS_ZST,
-            ) => ub_checks::maybe_is_aligned_and_not_null(addr, align, is_zst)
+            ) => ub_checks::maybe_is_aligned(addr, align)
         );
         crate::intrinsics::read_via_copy(src)
     }
@@ -1910,12 +1904,11 @@ pub const unsafe fn write<T>(dst: *mut T, src: T) {
         #[cfg(debug_assertions)] // Too expensive to always enable (for now?)
         ub_checks::assert_unsafe_precondition!(
             check_language_ub,
-            "ptr::write requires that the pointer argument is aligned and non-null",
+            "ptr::write requires that the pointer argument is aligned",
             (
                 addr: *mut () = dst as *mut (),
                 align: usize = align_of::<T>(),
-                is_zst: bool = T::IS_ZST,
-            ) => ub_checks::maybe_is_aligned_and_not_null(addr, align, is_zst)
+            ) => ub_checks::maybe_is_aligned(addr, align)
         );
         intrinsics::write_via_move(dst, src)
     }

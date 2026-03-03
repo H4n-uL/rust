@@ -575,6 +575,7 @@ pub(crate) fn llfn_attrs_from_instance<'ll, 'tcx>(
     }
 
     to_add.extend(target_features_attr(cx, tcx, function_features));
+    to_add.push(AttributeKind::NullPointerIsValid.create_attr(cx.llcx));
 
     attributes::apply_to_llfn(llfn, Function, &to_add);
 }

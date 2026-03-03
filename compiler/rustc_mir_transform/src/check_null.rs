@@ -85,12 +85,26 @@ fn insert_null_check<'tcx>(
 
     // Check whether the pointer is null.
     let is_null = local_decls.push(LocalDecl::with_source_info(tcx.types.bool, source_info)).into();
+    let is_null_rvalue = match context {
+        // If reference context,
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::SharedBorrow)
+        | PlaceContext::MutatingUse(MutatingUseContext::Borrow) => {
+            // check NULL
+            Rvalue::BinaryOp(BinOp::Eq, Box::new((Operand::Copy(addr), zero)))
+        }
+        // Else,
+        _ => {
+            // it must be false
+            Rvalue::Use(Operand::Constant(Box::new(ConstOperand {
+                span: source_info.span,
+                user_ty: None,
+                const_: Const::from_bool(tcx, false),
+            })))
+        }
+    };
     stmts.push(Statement::new(
         source_info,
-        StatementKind::Assign(Box::new((
-            is_null,
-            Rvalue::BinaryOp(BinOp::Eq, Box::new((Operand::Copy(addr), zero))),
-        ))),
+        StatementKind::Assign(Box::new((is_null, is_null_rvalue))),
     ));
 
     // We want to throw an exception if the pointer is null and the pointee is not unconditionally
